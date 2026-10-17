@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Account management{% endblock %}
+{% block content %}
+<section class="page-intro admin-intro"><div><span class="eyebrow">ADMINISTRATION</span><h1>Community<br><span>account management.</span></h1><p>Review accounts, assign Leader access, or block accounts that should no longer sign in.</p></div><span class="role-badge">✦ Administrator</span></section>
+<section class="panel admin-panel">
+  <div class="admin-table-heading"><div><span class="eyebrow">MEMBERS</span><h2>{{ users|length }} accounts</h2></div><span class="admin-warning">Only assign Leader access to trusted accounts.</span></div>
+  <div class="admin-table-wrap"><table class="admin-table">
+    <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>{% for person in users %}
+      <tr>
+        <td><span class="admin-member">{{ person.username }}</span>{% if person.is_admin %}<small class="admin-label">Administrator</small>{% endif %}</td>
+        <td>{% if not person.is_admin %}<form method="post" action="{{ url_for('main.update_user_role', user_id=person.id) }}" class="admin-role-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="role" aria-label="Role for {{ person.username }}"><option value="Youth Member"{% if person.role != 'Leader' %} selected{% endif %}>Youth Member</option><option value="Leader"{% if person.role == 'Leader' %} selected{% endif %}>Leader</option></select><button class="button button-soft-blue" type="submit">Save</button></form>{% else %}<span class="role-badge">Admin</span>{% endif %}</td>
+        <td><span class="account-status {{ 'status-blocked' if person.is_blocked else 'status-active' }}">{{ 'Blocked' if person.is_blocked else 'Active' }}</span></td>
+        <td>{% if not person.is_admin %}<form method="post" action="{{ url_for('main.toggle_user_block', user_id=person.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button {{ 'button-soft-blue' if person.is_blocked else 'button-danger' }}" type="submit">{{ 'Unblock' if person.is_blocked else 'Block account' }}</button></form>{% else %}<span class="admin-label">Protected</span>{% endif %}</td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

@@ -16,16 +16,23 @@
         <img src="{{ url_for('static', filename='images/youth-logo.png') }}" alt="ICF Youth logo">
         <span class="brand-caption">MÜNCHEN <i>·</i> YOUTH</span>
       </a>
-      {% if g.user and g.user.role %}
+      {% if g.user %}
         <nav class="main-nav" aria-label="Main navigation">
           <a class="{{ 'active' if request.endpoint == 'main.index' else '' }}" href="{{ url_for('main.index') }}">Home</a>
           <a class="{{ 'active' if request.endpoint == 'main.community_map' else '' }}" href="{{ url_for('main.community_map') }}">Community map</a>
           <a class="{{ 'active' if request.endpoint == 'main.information' else '' }}" href="{{ url_for('main.information') }}">Info</a>
           <a class="{{ 'active' if request.endpoint in ('main.calendar_page', 'main.create_event') else '' }}" href="{{ url_for('main.calendar_page') }}">Calendar</a>
-          <a class="{{ 'active' if request.endpoint in ('main.gallery', 'main.gallery_day') else '' }}" href="{{ url_for('main.gallery') }}">Gallery</a>
+          {% if gallery_enabled %}<a class="{{ 'active' if request.endpoint in ('main.gallery', 'main.gallery_day') else '' }}" href="{{ url_for('main.gallery') }}">Gallery</a>{% endif %}
         </nav>
         <div class="account-nav">
-          <a class="account-name" href="{{ url_for('main.index') }}">{{ g.user.username }}</a>
+          {% if g.user.is_admin %}<a class="admin-nav-link" href="{{ url_for('main.admin_users') }}">Admin</a>{% endif %}
+          <a class="account-name" href="{{ url_for('main.profile') }}">
+            <span class="account-avatar">{% if g.user.profile_image %}<img src="{{ url_for('main.uploaded_file', filename=g.user.profile_image) }}" alt="">{% else %}{{ g.user.username[:1]|upper }}{% endif %}</span>
+            <span class="account-username">{{ g.user.username }}</span><span class="account-chevron">⌄</span>
+          </a>
+          <div class="language-switch" role="group" aria-label="Language">
+            <button type="button" data-language="en" aria-label="Switch to English">EN</button><span aria-hidden="true">·</span><button type="button" data-language="de" aria-label="Auf Deutsch wechseln">DE</button>
+          </div>
           <form method="post" action="{{ url_for('main.logout') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="text-button" type="submit">Sign out</button>
@@ -33,20 +40,20 @@
         </div>
       {% else %}
         <div class="account-nav">
-          {% if g.user %}
-            <span class="account-name">{{ g.user.username }}</span>
-          {% endif %}
+          <div class="language-switch" role="group" aria-label="Language">
+            <button type="button" data-language="en" aria-label="Switch to English">EN</button><span aria-hidden="true">·</span><button type="button" data-language="de" aria-label="Auf Deutsch wechseln">DE</button>
+          </div>
           <a class="button button-small button-outline" href="{{ url_for('main.login') }}">Sign in</a>
         </div>
       {% endif %}
     </div>
-    {% if g.user and g.user.role %}
+    {% if g.user %}
       <nav class="mobile-nav" aria-label="Main navigation">
         <a class="{{ 'active' if request.endpoint == 'main.index' else '' }}" href="{{ url_for('main.index') }}"><span aria-hidden="true">⌂</span>Home</a>
         <a class="{{ 'active' if request.endpoint == 'main.community_map' else '' }}" href="{{ url_for('main.community_map') }}"><span aria-hidden="true">⌖</span>Map</a>
         <a class="{{ 'active' if request.endpoint == 'main.information' else '' }}" href="{{ url_for('main.information') }}"><span aria-hidden="true">✳</span>Info</a>
         <a class="{{ 'active' if request.endpoint in ('main.calendar_page', 'main.create_event') else '' }}" href="{{ url_for('main.calendar_page') }}"><span aria-hidden="true">▦</span>Calendar</a>
-        <a class="{{ 'active' if request.endpoint in ('main.gallery', 'main.gallery_day') else '' }}" href="{{ url_for('main.gallery') }}"><span aria-hidden="true">▧</span>Gallery</a>
+        {% if gallery_enabled %}<a class="{{ 'active' if request.endpoint in ('main.gallery', 'main.gallery_day') else '' }}" href="{{ url_for('main.gallery') }}"><span aria-hidden="true">▧</span>Gallery</a>{% else %}<a class="{{ 'active' if request.endpoint == 'main.profile' else '' }}" href="{{ url_for('main.profile') }}"><span aria-hidden="true">◎</span>Profile</a>{% endif %}
       </nav>
     {% endif %}
   </header>
@@ -68,5 +75,6 @@
     <span>ICF Youth München <span class="footer-dot">·</span> <a href="{{ url_for('main.share_qr') }}">Share the app</a></span>
   </footer>
   {% block scripts %}{% endblock %}
+  <script src="{{ url_for('static', filename='js/language.js') }}" defer></script>
 </body>
 </html>

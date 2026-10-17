@@ -3,7 +3,7 @@
 {% block content %}
 <section class="auth-layout">
   <div class="auth-aside"><img src="{{ url_for('static', filename='images/youth-logo.png') }}" alt="ICF Youth logo"><span class="eyebrow">COME AS YOU ARE</span><h1>This is where<br>we come together.</h1><p>Make an account and join the ICF Youth München community.</p></div>
-  <div class="auth-card"><span class="eyebrow">YOUR COMMUNITY STARTS HERE</span><h2>Create an account</h2><p class="muted">First, choose a username and password.</p>
+  <div class="auth-card"><span class="eyebrow">YOUR COMMUNITY STARTS HERE</span><h2>Create an account</h2><p class="muted">Choose a username and password. Every account starts as a Youth Member; an administrator can assign Leader access.</p>
     <form method="post" class="form-stack">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>Username<input name="username" autocomplete="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" placeholder="e.g. alex_m" autofocus><small>3–24 letters, numbers, or underscores.</small></label>

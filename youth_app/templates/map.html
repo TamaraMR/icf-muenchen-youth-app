@@ -8,14 +8,14 @@
 <section class="map-layout">
   <article class="panel map-panel"><div class="map-topline"><div><span class="eyebrow">MÜNCHEN & SURROUNDINGS</span><h2>Find your people</h2></div><span class="map-count">{{ locations|length }} {{ 'neighbor' if locations|length == 1 else 'neighbors' }}</span></div><div id="community-map" class="community-map" role="application" aria-label="Community neighborhood map"></div><div class="map-footnote"><span class="map-key"></span> Community members <span class="map-footnote-note">Map tiles © OpenStreetMap</span></div></article>
   <aside class="map-sidebar">
-    <article class="panel map-form-panel"><span class="eyebrow">ADD YOUR PIN</span><h3>Put your neighborhood on the map</h3><p>Enter your postcode and area, then tap the map to place an approximate marker.</p>
-      <form class="form-stack" method="post">
+    <article class="panel map-form-panel"><span class="eyebrow">ADD YOUR PIN</span><h3>Put your neighborhood on the map</h3><p>Enter your postcode and area. Your approximate pin is placed automatically.</p>
+      <form class="form-stack" method="post" id="neighborhood-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="latitude" id="latitude" value="{{ g.user.latitude or '' }}"><input type="hidden" name="longitude" id="longitude" value="{{ g.user.longitude or '' }}">
         <div class="form-pair"><label>Postcode<input name="postal_code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="e.g. 80331" required value="{{ g.user.postal_code or '' }}"></label><label>Area<input name="area" maxlength="80" placeholder="e.g. Maxvorstadt" required value="{{ g.user.area or '' }}"></label></div>
-        <div class="pin-hint"><span>⌖</span> Tap anywhere on the map to set or move your pin.</div><button class="button button-primary button-full" type="submit">Save my neighborhood <span aria-hidden="true">→</span></button>
+        <div class="pin-hint"><span>⌖</span> Your pin is placed automatically from your postcode and area.</div><button class="button button-primary button-full" type="submit">Save my neighborhood <span aria-hidden="true">→</span></button>
       </form>
     </article>
-    <article class="privacy-note"><span class="privacy-icon">✳</span><div><b>Your privacy matters</b><p>We show only your postcode and area. Your pin marks a general neighborhood, not your home.</p></div></article>
+    <article class="privacy-note"><span class="privacy-icon">✳</span><div><b>Your privacy matters</b><p>We show only your postcode and area. Your pin marks a general neighborhood, not your home. The postcode and area are sent to OpenStreetMap to find the approximate map location.</p></div></article>
     {% if locations %}<article class="panel neighbors-panel"><span class="eyebrow">AROUND HERE</span><h3>Your neighbors</h3><div class="neighbor-list">{% for person in locations %}<a href="#community-map" class="neighbor-row" data-focus-lat="{{ person.latitude }}" data-focus-lon="{{ person.longitude }}"><span class="neighbor-avatar">{% if person.profile_image %}<img src="{{ url_for('main.uploaded_file', filename=person.profile_image) }}" alt="">{% else %}<span>{{ person.username[:1]|upper }}</span>{% endif %}</span><span><b>{{ person.username }}</b><small>{{ person.area }}, {{ person.postal_code }}</small></span><span class="neighbor-arrow">↗</span></a>{% endfor %}</div></article>{% endif %}
   </aside>
 </section>

@@ -59,6 +59,9 @@ def load_user():
         if user_id
         else None
     )
+    if g.user and g.user["is_blocked"]:
+        session.clear()
+        g.user = None
 
 
 def login_required(view):
@@ -69,8 +72,6 @@ def login_required(view):
         if g.user is None:
             flash("Sign in to continue.", "info")
             return redirect(url_for("main.login", next=request.path))
-        if g.user["role"] is None and request.endpoint != "main.choose_role":
-            return redirect(url_for("main.choose_role"))
         return view(*args, **kwargs)
 
     return wrapped
@@ -84,9 +85,22 @@ def leader_required(view):
         if g.user is None:
             flash("Sign in to continue.", "info")
             return redirect(url_for("main.login", next=request.path))
-        if g.user["role"] is None:
-            return redirect(url_for("main.choose_role"))
         if g.user["role"] != "Leader":
+            abort(403)
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+def admin_required(view):
+    from functools import wraps
+
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if g.user is None:
+            flash("Sign in to continue.", "info")
+            return redirect(url_for("main.login", next=request.path))
+        if not g.user["is_admin"]:
             abort(403)
         return view(*args, **kwargs)
 
@@ -132,8 +146,6 @@ def safe_month():
 def index():
     if g.user is None:
         return render_template("landing.html")
-    if g.user["role"] is None:
-        return redirect(url_for("main.choose_role"))
 
     events = get_db().execute(
         "SELECT title, description, event_date FROM events "
@@ -160,14 +172,15 @@ def register():
         else:
             try:
                 cursor = get_db().execute(
-                    "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                    "INSERT INTO users (username, password_hash, role) "
+                    "VALUES (?, ?, 'Youth Member')",
                     (username, generate_password_hash(password)),
                 )
                 get_db().commit()
             except sqlite3.IntegrityError:
                 flash("That username is already taken. Try another one.", "error")
             else:
-                flash("Your account is ready. Sign in to choose your role.", "success")
+                flash("Your account is ready. Sign in to get started.", "success")
                 return redirect(url_for("main.login"))
     return render_template("register.html")
 
@@ -184,6 +197,8 @@ def login():
         ).fetchone()
         if user is None or not check_password_hash(user["password_hash"], password):
             flash("We couldn’t find a matching username and password.", "error")
+        elif user["is_blocked"]:
+            flash("This account is blocked. Please contact an administrator.", "error")
         else:
             session.clear()
             session["user_id"] = user["id"]
@@ -194,28 +209,18 @@ def login():
     return render_template("login.html")
 
 
-@bp.route("/choose-role", methods=("GET", "POST"))
-@login_required
-def choose_role():
-    if g.user["role"] is not None:
-        return redirect(url_for("main.index"))
-    if request.method == "POST":
-        role = request.form.get("role")
-        if role not in {"Youth Member", "Leader"}:
-            flash("Choose one of the roles to continue.", "error")
-        else:
-            get_db().execute("UPDATE users SET role = ? WHERE id = ?", (role, g.user["id"]))
-            get_db().commit()
-            return redirect(url_for("main.index"))
-    return render_template("choose_role.html")
-
-
 @bp.post("/logout")
 @login_required
 def logout():
     session.clear()
     flash("You’re signed out. See you soon!", "info")
     return redirect(url_for("main.index"))
+
+
+@bp.get("/profile")
+@login_required
+def profile():
+    return render_template("profile.html")
 
 
 @bp.post("/profile")
@@ -225,16 +230,16 @@ def update_profile():
     birthday = request.form.get("birthday", "").strip() or None
     if len(bio) > 240:
         flash("Keep your bio to 240 characters or fewer.", "error")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.profile"))
     if birthday:
         try:
             date.fromisoformat(birthday)
         except ValueError:
             flash("Choose a valid birthday.", "error")
-            return redirect(url_for("main.index"))
+            return redirect(url_for("main.profile"))
         if birthday > date.today().isoformat():
             flash("Your birthday can’t be in the future.", "error")
-            return redirect(url_for("main.index"))
+            return redirect(url_for("main.profile"))
 
     image_name = g.user["profile_image"]
     upload = request.files.get("profile_image")
@@ -243,7 +248,7 @@ def update_profile():
             image_name = save_image(upload)
         except ValueError as error:
             flash(str(error), "error")
-            return redirect(url_for("main.index"))
+            return redirect(url_for("main.profile"))
 
     get_db().execute(
         "UPDATE users SET bio = ?, birthday = ?, profile_image = ? WHERE id = ?",
@@ -251,7 +256,7 @@ def update_profile():
     )
     get_db().commit()
     flash("Your profile has been updated.", "success")
-    return redirect(url_for("main.index"))
+    return redirect(url_for("main.profile"))
 
 
 @bp.route("/map", methods=("GET", "POST"))
@@ -263,7 +268,7 @@ def community_map():
         try:
             latitude = float(request.form.get("latitude", ""))
             longitude = float(request.form.get("longitude", ""))
-        except ValueError:
+        except (TypeError, ValueError):
             latitude = longitude = None
         if not re.fullmatch(r"\d{5}", postal_code):
             flash("Enter a valid 5-digit German postal code.", "error")
@@ -275,7 +280,7 @@ def community_map():
             or not 47 <= latitude <= 49
             or not 10 <= longitude <= 14
         ):
-            flash("Tap the map to place an approximate neighborhood pin.", "error")
+            flash("We couldn’t find that postcode and area. Check the details and try again.", "error")
         else:
             get_db().execute(
                 "UPDATE users SET postal_code = ?, area = ?, latitude = ?, longitude = ? "
@@ -283,13 +288,14 @@ def community_map():
                 (postal_code, area, latitude, longitude, g.user["id"]),
             )
             get_db().commit()
-            flash("Your approximate neighborhood has been added to the map.", "success")
+            flash("Your neighborhood has been added to the map.", "success")
             return redirect(url_for("main.community_map"))
 
     locations = get_db().execute(
         "SELECT id, username, role, bio, birthday, profile_image, postal_code, area, "
         "latitude, longitude "
-        "FROM users WHERE latitude IS NOT NULL AND longitude IS NOT NULL ORDER BY username"
+        "FROM users WHERE latitude IS NOT NULL AND longitude IS NOT NULL "
+        "AND is_blocked = 0 ORDER BY username"
     ).fetchall()
     return render_template("map.html", locations=[dict(person) for person in locations])
 
@@ -315,7 +321,8 @@ def calendar_page():
     ).fetchall()
     birthdays = db.execute(
         "SELECT username, birthday, profile_image FROM users "
-        "WHERE birthday IS NOT NULL AND substr(birthday, 6, 2) = ? ORDER BY username",
+        "WHERE birthday IS NOT NULL AND is_blocked = 0 "
+        "AND substr(birthday, 6, 2) = ? ORDER BY username",
         (f"{month:02d}",),
     ).fetchall()
     days = {
@@ -347,6 +354,59 @@ def calendar_page():
         next_year=next_date.year,
         next_month=next_date.month,
     )
+
+
+@bp.get("/admin/users")
+@admin_required
+def admin_users():
+    users = get_db().execute(
+        "SELECT id, username, role, is_admin, is_blocked, created_at "
+        "FROM users ORDER BY is_admin DESC, username COLLATE NOCASE"
+    ).fetchall()
+    return render_template("admin_users.html", users=users)
+
+
+@bp.post("/admin/users/<int:user_id>/role")
+@admin_required
+def update_user_role(user_id):
+    role = request.form.get("role")
+    if role not in {"Youth Member", "Leader"}:
+        abort(400, description="Choose a valid account role.")
+    cursor = get_db().execute(
+        "UPDATE users SET role = ? WHERE id = ? AND is_admin = 0",
+        (role, user_id),
+    )
+    get_db().commit()
+    if not cursor.rowcount:
+        abort(404)
+    flash("The account role has been updated.", "success")
+    return redirect(url_for("main.admin_users"))
+
+
+@bp.post("/admin/users/<int:user_id>/block")
+@admin_required
+def toggle_user_block(user_id):
+    if user_id == g.user["id"]:
+        flash("You can’t block your own administrator account.", "error")
+        return redirect(url_for("main.admin_users"))
+    target = get_db().execute(
+        "SELECT id, is_blocked, is_admin FROM users WHERE id = ?",
+        (user_id,),
+    ).fetchone()
+    if target is None or target["is_admin"]:
+        abort(404)
+    get_db().execute(
+        "UPDATE users SET is_blocked = ? WHERE id = ?",
+        (0 if target["is_blocked"] else 1, user_id),
+    )
+    get_db().commit()
+    flash(
+        "The account has been unblocked."
+        if target["is_blocked"]
+        else "The account has been blocked.",
+        "success",
+    )
+    return redirect(url_for("main.admin_users"))
 
 
 @bp.post("/events")

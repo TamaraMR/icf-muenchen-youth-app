@@ -9,7 +9,10 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL COLLATE NOCASE UNIQUE,
     password_hash TEXT NOT NULL,
-    role TEXT CHECK (role IN ('Youth Member', 'Leader') OR role IS NULL),
+    role TEXT NOT NULL DEFAULT 'Youth Member'
+        CHECK (role IN ('Youth Member', 'Leader')),
+    is_admin INTEGER NOT NULL DEFAULT 0,
+    is_blocked INTEGER NOT NULL DEFAULT 0,
     bio TEXT NOT NULL DEFAULT '',
     birthday TEXT,
     profile_image TEXT,
@@ -59,8 +62,40 @@ def get_db():
 
 def init_db(app):
     with app.app_context():
-        get_db().executescript(SCHEMA)
-        get_db().commit()
+        db = get_db()
+        db.executescript(SCHEMA)
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(users)")}
+        if "is_admin" not in columns:
+            db.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
+        if "is_blocked" not in columns:
+            db.execute("ALTER TABLE users ADD COLUMN is_blocked INTEGER NOT NULL DEFAULT 0")
+        db.execute("UPDATE users SET role = 'Youth Member' WHERE role IS NULL")
+        admin_username = app.config["ADMIN_USERNAME"]
+        admin_password = app.config["ADMIN_PASSWORD"]
+        if admin_password:
+            from werkzeug.security import generate_password_hash
+
+            existing = db.execute(
+                "SELECT id, is_admin FROM users WHERE username = ?",
+                (admin_username,),
+            ).fetchone()
+            if existing is None:
+                db.execute(
+                    "INSERT INTO users (username, password_hash, role, is_admin) "
+                    "VALUES (?, ?, 'Youth Member', 1)",
+                    (admin_username, generate_password_hash(admin_password)),
+                )
+            elif not existing["is_admin"]:
+                db.execute(
+                    "UPDATE users SET password_hash = ?, role = 'Youth Member', "
+                    "is_admin = 1, is_blocked = 0 WHERE id = ?",
+                    (generate_password_hash(admin_password), existing["id"]),
+                )
+        else:
+            app.logger.warning(
+                "ADMIN_PASSWORD is not set; the administrator account has not been created."
+            )
+        db.commit()
     app.cli.add_command(init_db_command)
 
 

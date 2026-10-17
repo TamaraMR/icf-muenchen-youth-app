@@ -15,7 +15,13 @@ def create_app(test_config=None):
         or str(Path(app.instance_path) / "youth.sqlite"),
         UPLOAD_FOLDER=os.environ.get("UPLOAD_FOLDER")
         or str(Path(app.instance_path) / "uploads"),
-        APP_BASE_URL=os.environ.get("APP_BASE_URL"),
+        APP_BASE_URL=os.environ.get(
+            "APP_BASE_URL", "https://icf-muenchen-youth-app.onrender.com"
+        ),
+        ADMIN_USERNAME=os.environ.get("ADMIN_USERNAME", "youth_app_admin"),
+        ADMIN_PASSWORD=os.environ.get("ADMIN_PASSWORD", ""),
+        GALLERY_ENABLED=os.environ.get("GALLERY_ENABLED", "false").lower()
+        in {"1", "true", "yes"},
         MAX_CONTENT_LENGTH=8 * 1024 * 1024,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
@@ -36,6 +42,17 @@ def create_app(test_config=None):
 
     @app.before_request
     def protect_form_posts():
+        if (
+            not app.config["GALLERY_ENABLED"]
+            and request.endpoint
+            and request.endpoint.startswith("main.")
+            and request.endpoint in {
+                "main.gallery",
+                "main.open_gallery_day",
+                "main.gallery_day",
+            }
+        ):
+            abort(404)
         if request.method != "POST":
             return
         from .routes import verify_csrf
@@ -52,10 +69,15 @@ def create_app(test_config=None):
             "Content-Security-Policy",
             "default-src 'self'; img-src 'self' data: https://*.tile.openstreetmap.org; "
             "style-src 'self' 'unsafe-inline' https://unpkg.com; "
-            "script-src 'self' https://unpkg.com; connect-src 'self'; "
+            "script-src 'self' https://unpkg.com; "
+            "connect-src 'self' https://nominatim.openstreetmap.org; "
             "font-src 'self' https://unpkg.com; frame-ancestors 'none'",
         )
         return response
+
+    @app.context_processor
+    def inject_app_settings():
+        return {"gallery_enabled": app.config["GALLERY_ENABLED"]}
 
     @app.template_filter("pretty_date")
     def pretty_date(value):

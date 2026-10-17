@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Your profile{% endblock %}
+{% block content %}
+<section class="profile-page">
+  <div class="page-intro"><div><span class="eyebrow">YOUR SPACE</span><h1>Your profile,<br><span>your story.</span></h1><p>Choose what the community sees and update it whenever you like.</p></div></div>
+  <article class="panel profile-editor">
+    <div class="panel-heading"><div><span class="eyebrow">A LITTLE ABOUT YOU</span><h3>Edit your profile</h3></div><span class="role-badge">{{ g.user.role }}</span></div>
+    <div class="profile-intro">
+      {% if g.user.profile_image %}<img class="profile-avatar" src="{{ url_for('main.uploaded_file', filename=g.user.profile_image) }}" alt="{{ g.user.username }}’s profile photo">{% else %}<span class="profile-avatar avatar-placeholder" aria-label="Default profile image"><svg viewBox="0 0 64 64" role="img" aria-hidden="true"><circle cx="32" cy="23" r="12"/><path d="M10 58c0-12 9-21 22-21s22 9 22 21"/></svg></span>{% endif %}
+      <div><h4>{{ g.user.username }}</h4><span class="profile-role">{{ g.user.role }}</span></div>
+    </div>
+    <form class="form-stack profile-form" method="post" action="{{ url_for('main.update_profile') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Profile picture <span class="optional">OPTIONAL</span><input type="file" name="profile_image" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP · max 8 MB</small></label>
+      <label>Your bio<textarea name="bio" rows="3" maxlength="240" placeholder="A little about you...">{{ g.user.bio }}</textarea></label>
+      <label>Your birthday<input type="date" name="birthday" max="{{ today.isoformat() }}"{% if g.user.birthday %} value="{{ g.user.birthday }}"{% endif %}></label>
+      <button class="button button-primary" type="submit">Save profile <span aria-hidden="true">→</span></button>
+    </form>
+  </article>
+</section>
+{% endblock %}
