@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="home-hero">
+  <div class="home-hero-copy"><span class="eyebrow eyebrow-light">ICF YOUTH MÜNCHEN <span>✳</span></span><h1>Hey, {{ g.user.username }}.<br><span>You belong here.</span></h1><p>A little space for all the people, plans, and moments that make this community yours.</p><div class="welcome-chip"><span class="welcome-spark">✳</span> Welcome to the ICF München Youth App</div></div>
+  <div class="home-hero-mark"><span class="hero-ring ring-large"></span><span class="hero-ring ring-small"></span><img src="{{ url_for('static', filename='images/youth-logo.png') }}" alt="ICF Youth"></div>
+</section>
+<div class="section-heading dashboard-heading"><div><span class="eyebrow">YOUR SPACE</span><h2>Make yourself at home</h2></div><span class="role-badge">{{ '✦' if g.user.role == 'Leader' else '✳' }} {{ g.user.role }}</span></div>
+<section class="dashboard-grid">
+  <article class="panel profile-panel">
+    <div class="panel-heading"><div><span class="eyebrow">A LITTLE ABOUT YOU</span><h3>Your profile</h3></div><span class="panel-edit-label">EDIT ANYTIME</span></div>
+    <div class="profile-intro">
+      {% if g.user.profile_image %}<img class="profile-avatar" src="{{ url_for('main.uploaded_file', filename=g.user.profile_image) }}" alt="{{ g.user.username }}’s profile photo">{% else %}<span class="profile-avatar avatar-placeholder" aria-label="Default profile image"><svg viewBox="0 0 64 64" role="img" aria-hidden="true"><circle cx="32" cy="23" r="12"/><path d="M10 58c0-12 9-21 22-21s22 9 22 21"/></svg></span>{% endif %}
+      <div><h4>{{ g.user.username }}</h4><span class="profile-role">{{ g.user.role }}</span></div>
+    </div>
+    <form class="form-stack profile-form" method="post" action="{{ url_for('main.update_profile') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Profile picture <span class="optional">OPTIONAL</span><input type="file" name="profile_image" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP · max 8 MB</small></label>
+      <label>Your bio<textarea name="bio" rows="3" maxlength="240" placeholder="A little about you...">{{ g.user.bio }}</textarea></label>
+      <label>Your birthday<input type="date" name="birthday" max="{{ today if today is defined else '' }}"{% if g.user.birthday %} value="{{ g.user.birthday }}"{% endif %}></label>
+      <button class="button button-primary button-full" type="submit">Save profile <span aria-hidden="true">→</span></button>
+    </form>
+  </article>
+  <section class="events-column">
+    {% if events %}
+      <article class="panel upcoming-panel"><div class="panel-heading"><div><span class="eyebrow">SAVE THE DATE</span><h3>Coming up</h3></div><a class="subtle-link" href="{{ url_for('main.calendar_page') }}">All dates →</a></div>
+        <div class="upcoming-list">
+          {% for event in events %}
+          <div class="upcoming-event"><div class="event-date"><b>{{ event.event_date[8:10] }}</b><span>{{ event.event_date[5:7]|int|month_name }}</span></div><div><h4>{{ event.title }}</h4>{% if event.description %}<p>{{ event.description }}</p>{% endif %}</div><span class="event-arrow">↗</span></div>
+          {% endfor %}
+        </div>
+      </article>
+    {% endif %}
+    <article class="panel quick-links"><div class="panel-heading"><div><span class="eyebrow">EXPLORE TOGETHER</span><h3>Find your next thing</h3></div></div>
+      <a href="{{ url_for('main.community_map') }}" class="quick-link"><span class="quick-icon map-icon">⌖</span><span><b>Meet your neighbors</b><small>See who’s living nearby</small></span><span class="quick-arrow">→</span></a>
+      <a href="{{ url_for('main.calendar_page') }}" class="quick-link"><span class="quick-icon calendar-icon">▦</span><span><b>Make a plan</b><small>Birthdays and community events</small></span><span class="quick-arrow">→</span></a>
+      <a href="{{ url_for('main.gallery') }}" class="quick-link"><span class="quick-icon gallery-icon">▧</span><span><b>Open the memory box</b><small>Photos from our favorite days</small></span><span class="quick-arrow">→</span></a>
+    </article>
+  </section>
+</section>
+{% endblock %}

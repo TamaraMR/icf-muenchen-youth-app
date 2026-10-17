@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Welcome{% endblock %}
+{% block shell_class %}landing-shell{% endblock %}
+{% block content %}
+<section class="landing-hero">
+  <div class="landing-copy">
+    <span class="eyebrow"><span class="eyebrow-dot"></span> A place to belong</span>
+    <h1>Good people.<br><span>Great memories.</span></h1>
+    <p class="landing-intro">Your home for everything happening with ICF Youth München. Find your people, make plans, and keep the best moments close.</p>
+    <div class="landing-actions">
+      <a class="button button-primary" href="{{ url_for('main.register') }}">Join the community <span aria-hidden="true">→</span></a>
+      <a class="button button-plain" href="{{ url_for('main.login') }}">I already have an account</a>
+    </div>
+    <div class="landing-proof"><span class="avatar-stack"><i>Y</i><i>+</i><i>♥</i></span><span>Everything youth, all in one place.</span></div>
+  </div>
+  <div class="landing-art">
+    <div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div>
+    <div class="logo-poster"><img src="{{ url_for('static', filename='images/youth-logo.png') }}" alt="ICF Youth logo"></div>
+    <span class="art-note note-top">YOUR PEOPLE <span>✳</span></span>
+    <span class="art-note note-bottom"><b>01</b> — CONNECT. GROW. BELONG.</span>
+    <span class="art-spark spark-one">✳</span><span class="art-spark spark-two">✦</span>
+  </div>
+</section>
+<section class="landing-pillars" aria-label="What you can do">
+  <div><span class="pillar-icon">⌖</span><span><b>Find your people</b><small>See who’s around your neighborhood.</small></span></div>
+  <div><span class="pillar-icon">▦</span><span><b>Be in the know</b><small>Events, birthdays and what’s coming up.</small></span></div>
+  <div><span class="pillar-icon">▧</span><span><b>Keep the memories</b><small>Relive our favorite days together.</small></span></div>
+</section>
+<section class="qr-invite">
+  <div><span class="eyebrow">BRING YOUR FRIENDS</span><h2>One scan away.</h2><p>Share the community with a link or a quick scan.</p></div>
+  <img class="qr-code" src="{{ url_for('main.share_qr') }}" alt="QR code to open the ICF Youth community app">
+</section>
+{% endblock %}

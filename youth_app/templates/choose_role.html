@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Choose your role{% endblock %}
+{% block content %}
+<section class="role-layout">
+  <div class="role-heading"><span class="eyebrow">ONE LAST THING</span><h1>How do you<br>want to show up?</h1><p>Pick the role that fits you. You’ll only be asked once.</p></div>
+  <form method="post" class="role-options">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="role-option" type="submit" name="role" value="Youth Member"><span class="role-symbol">✳</span><span><b>Youth Member</b><small>Connect with friends, find events, and share the memories.</small></span><span class="role-arrow">→</span></button>
+    <button class="role-option" type="submit" name="role" value="Leader"><span class="role-symbol leader-symbol">✦</span><span><b>Leader</b><small>Help the community stay connected and plan what’s next.</small></span><span class="role-arrow">→</span></button>
+  </form>
+</section>
+{% endblock %}

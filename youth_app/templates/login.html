@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<section class="auth-layout">
+  <div class="auth-aside"><img src="{{ url_for('static', filename='images/youth-logo.png') }}" alt="ICF Youth logo"><span class="eyebrow">GOOD TO HAVE YOU BACK</span><h1>Your people<br>are right here.</h1><p>Sign in and pick up where the community left off.</p></div>
+  <div class="auth-card"><span class="eyebrow">WELCOME BACK</span><h2>Sign in</h2><p class="muted">Use your username and password to continue.</p>
+    <form method="post" class="form-stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Username<input name="username" autocomplete="username" required maxlength="24" autofocus></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="button button-primary button-full" type="submit">Sign in <span aria-hidden="true">→</span></button>
+    </form>
+    <p class="auth-switch">New around here? <a href="{{ url_for('main.register') }}">Create an account</a></p>
+  </div>
+</section>
+{% endblock %}

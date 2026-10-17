@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b88">
+  <title>{% block title %}ICF Youth München{% endblock %} · ICF Youth</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/youth-logo.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="{{ url_for('main.index') }}" aria-label="ICF Youth home">
+        <img src="{{ url_for('static', filename='images/youth-logo.png') }}" alt="ICF Youth logo">
+        <span class="brand-caption">MÜNCHEN <i>·</i> YOUTH</span>
+      </a>
+      {% if g.user and g.user.role %}
+        <nav class="main-nav" aria-label="Main navigation">
+          <a class="{{ 'active' if request.endpoint == 'main.index' else '' }}" href="{{ url_for('main.index') }}">Home</a>
+          <a class="{{ 'active' if request.endpoint == 'main.community_map' else '' }}" href="{{ url_for('main.community_map') }}">Community map</a>
+          <a class="{{ 'active' if request.endpoint == 'main.information' else '' }}" href="{{ url_for('main.information') }}">Info</a>
+          <a class="{{ 'active' if request.endpoint in ('main.calendar_page', 'main.create_event') else '' }}" href="{{ url_for('main.calendar_page') }}">Calendar</a>
+          <a class="{{ 'active' if request.endpoint in ('main.gallery', 'main.gallery_day') else '' }}" href="{{ url_for('main.gallery') }}">Gallery</a>
+        </nav>
+        <div class="account-nav">
+          <a class="account-name" href="{{ url_for('main.index') }}">{{ g.user.username }}</a>
+          <form method="post" action="{{ url_for('main.logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-button" type="submit">Sign out</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="account-nav">
+          {% if g.user %}
+            <span class="account-name">{{ g.user.username }}</span>
+          {% endif %}
+          <a class="button button-small button-outline" href="{{ url_for('main.login') }}">Sign in</a>
+        </div>
+      {% endif %}
+    </div>
+    {% if g.user and g.user.role %}
+      <nav class="mobile-nav" aria-label="Main navigation">
+        <a class="{{ 'active' if request.endpoint == 'main.index' else '' }}" href="{{ url_for('main.index') }}"><span aria-hidden="true">⌂</span>Home</a>
+        <a class="{{ 'active' if request.endpoint == 'main.community_map' else '' }}" href="{{ url_for('main.community_map') }}"><span aria-hidden="true">⌖</span>Map</a>
+        <a class="{{ 'active' if request.endpoint == 'main.information' else '' }}" href="{{ url_for('main.information') }}"><span aria-hidden="true">✳</span>Info</a>
+        <a class="{{ 'active' if request.endpoint in ('main.calendar_page', 'main.create_event') else '' }}" href="{{ url_for('main.calendar_page') }}"><span aria-hidden="true">▦</span>Calendar</a>
+        <a class="{{ 'active' if request.endpoint in ('main.gallery', 'main.gallery_day') else '' }}" href="{{ url_for('main.gallery') }}"><span aria-hidden="true">▧</span>Gallery</a>
+      </nav>
+    {% endif %}
+  </header>
+
+  <main class="page-shell {% block shell_class %}{% endblock %}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack" role="status">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <span>Made for our community <span class="footer-heart">♥</span></span>
+    <span>ICF Youth München <span class="footer-dot">·</span> <a href="{{ url_for('main.share_qr') }}">Share the app</a></span>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
